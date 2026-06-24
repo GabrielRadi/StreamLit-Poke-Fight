@@ -2,6 +2,8 @@ import streamlit as st
 import requests as rq
 import random
 
+# Feito por: Eduardo Vieira Montagna, Gabriel Paz Ribeiro, Gustavo Fernandez Sanches, Otavio Augusto Milioni Costa e João Pedro Batista.
+
 st.set_page_config(page_title="Pokémon API & Arena", layout="wide")
 st.title("Pokémon API & Arena ⚔️")
 
@@ -123,7 +125,7 @@ with aba_pokedex:
         "Digite as primeiras letras ou selecione um Pokémon da lista:",
         options=lista_pokemon,
         index=lista_pokemon.index("pikachu") if "pikachu" in lista_pokemon else 0,
-        format_func=lambda x: x.title().replace("-", " ") # Fica lindo na tela!
+        format_func=lambda x: x.title().replace("-", " ")
     )
 
     if search_query:
@@ -188,7 +190,6 @@ with aba_batalha:
         with col_vs:
             st.markdown("<h2 style='text-align: center; margin-top: 30px;'>VS</h2>", unsafe_allow_html=True)
         with col_lutador2:
-            # Substituído por selectbox inteligente para o Lutador 2 🦊
             p2_index = lista_pokemon.index("ninetales") if "ninetales" in lista_pokemon else 0
             poke2_nome = st.selectbox(
                 "Lutador 2:", 
@@ -471,7 +472,7 @@ with aba_batalha:
                                     
                             if mensagens_status:
                                 efeito_especial += " " + " ".join(mensagens_status)
-
+                            # STATUS DE EFEITO SENDO APLICADOS
                         if poder is None:
                             if nome_interno_golpe == "rest":
                                 if jogador_atual == 1:
@@ -605,7 +606,7 @@ with aba_batalha:
                             mensagem_log = gerar_mensagem_acao(nome_atacante, golpe_escolhido, tipo_do_golpe, poder, dano_causado, texto_efetividade, efeito_especial)
 
                         st.session_state.log_batalha.insert(0, mensagem_log)
-                
+                # DISABLED MOVESET
                 if jogador_atual == 1 and st.session_state.disable1:
                     st.session_state.disable_turnos1 -= 1
                     if st.session_state.disable_turnos1 <= 0:
