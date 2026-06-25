@@ -2,6 +2,8 @@ import streamlit as st
 import requests as rq
 import random
 
+# feito por: Eduardo Vieira Montagna, Gabriel Paz Ribeiro, Gustavo Fernandes Sanches, Otavio Augusto Milioni Costa, João Pedro Batista
+
 st.set_page_config(page_title="Pokémon API & Arena", layout="wide")
 st.title("Pokémon API & Arena ⚔️")
 
