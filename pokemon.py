@@ -2,8 +2,6 @@ import streamlit as st
 import requests as rq
 import random
 
-# Feito por: Eduardo Vieira Montagna, Gabriel Paz Ribeiro, Gustavo Fernandez Sanches, Otavio Augusto Milioni Costa e João Pedro Batista.
-
 st.set_page_config(page_title="Pokémon API & Arena", layout="wide")
 st.title("Pokémon API & Arena ⚔️")
 
@@ -166,201 +164,222 @@ with aba_pokedex:
                                 st.caption(nome_evo.title())
             else:
                 st.error("Pokémon não encontrado. Verifique o nome e tente novamente!")
-
 # ==========================================
-# ABA 2: ARENA DE BATALHA 
+# ABA 2: ARENA DE BATALHA
 # ==========================================
 with aba_batalha:
     if not st.session_state.batalha_ativa:
-        st.header("Prepare seus Pokémon!")
-        
+        st.header("Prepare suas Equipes para a Batalha!")
         lista_pokemon = get_todos_os_nomes()
+
+        col_t1, col_t2 = st.columns(2)
         
-        col_lutador1, col_vs, col_lutador2 = st.columns([2, 1, 2])
-        
-        with col_lutador1:
-            p1_index = lista_pokemon.index("gengar") if "gengar" in lista_pokemon else 0
-            poke1_nome = st.selectbox(
-                "Lutador 1:", 
-                options=lista_pokemon, 
-                index=p1_index, 
-                key="p1_select",
-                format_func=lambda x: x.title().replace("-", " ")
-            )
-        with col_vs:
-            st.markdown("<h2 style='text-align: center; margin-top: 30px;'>VS</h2>", unsafe_allow_html=True)
-        with col_lutador2:
-            p2_index = lista_pokemon.index("ninetales") if "ninetales" in lista_pokemon else 0
-            poke2_nome = st.selectbox(
-                "Lutador 2:", 
-                options=lista_pokemon, 
-                index=p2_index, 
-                key="p2_select",
-                format_func=lambda x: x.title().replace("-", " ")
-            )
+        with col_t1:
+            st.subheader("🔴 Equipe 1")
+            qtd_p1 = st.number_input("Quantidade de Pokémon (Equipe 1):", min_value=1, max_value=6, value=1, key="qtd_p1")
+            
+            time1_preparado = []
+            for i in range(int(qtd_p1)):
+                with st.expander(f"Pokémon #{i+1} - Equipe 1", expanded=(i==0)):
+                    p_nome = st.selectbox(f"Escolha o Pokémon #{i+1}:", options=lista_pokemon, index=lista_pokemon.index("gengar") if "gengar" in lista_pokemon else 0, key=f"t1_p_{i}")
+                    p_dados = get_pokemon(p_nome)
+                    if p_dados:
+                        golpes = filtrar_golpes_level_up(p_dados)
+                        dict_golpes = {m["move"]["name"].replace("-", " ").title(): m for m in golpes}
+                        escolhas = st.multiselect(f"Golpes de {p_dados['name'].title()}:", options=list(dict_golpes.keys()), max_selections=4, key=f"t1_g_{i}")
+                        
+                        if escolhas:
+                            time1_preparado.append({
+                                "dados": p_dados,
+                                "moves": [dict_golpes[n] for n in escolhas],
+                                "hp_max": extrair_atributos(p_dados)["hp"] * 4,
+                                "hp": extrair_atributos(p_dados)["hp"] * 4,
+                                "stats_base": extrair_atributos(p_dados),
+                                "status": None,
+                                "toxic_turnos": 0,
+                                "sono_turnos": 0,
+                                "confuso": False,
+                                "confuso_turnos": 0,
+                                "disable": None,
+                                "disable_turnos": 0,
+                                "ultimo_move": None,
+                                "estagios": {"attack": 0, "defense": 0, "special-attack": 0, "special-defense": 0, "speed": 0, "accuracy": 0}
+                            })
 
-        poke1_dados = get_pokemon(poke1_nome) if poke1_nome else None
-        poke2_dados = get_pokemon(poke2_nome) if poke2_nome else None
+        with col_t2:
+            st.subheader("🔵 Equipe 2")
+            qtd_p2 = st.number_input("Quantidade de Pokémon (Equipe 2):", min_value=1, max_value=6, value=1, key="qtd_p2")
+            
+            time2_preparado = []
+            for i in range(int(qtd_p2)):
+                with st.expander(f"Pokémon #{i+1} - Equipe 2", expanded=(i==0)):
+                    p_nome = st.selectbox(f"Escolha o Pokémon #{i+1}:", options=lista_pokemon, index=lista_pokemon.index("ninetales") if "ninetales" in lista_pokemon else 0, key=f"t2_p_{i}")
+                    p_dados = get_pokemon(p_nome)
+                    if p_dados:
+                        golpes = filtrar_golpes_level_up(p_dados)
+                        dict_golpes = {m["move"]["name"].replace("-", " ").title(): m for m in golpes}
+                        escolhas = st.multiselect(f"Golpes de {p_dados['name'].title()}:", options=list(dict_golpes.keys()), max_selections=4, key=f"t2_g_{i}")
+                        
+                        if escolhas:
+                            time2_preparado.append({
+                                "dados": p_dados,
+                                "moves": [dict_golpes[n] for n in escolhas],
+                                "hp_max": extrair_atributos(p_dados)["hp"] * 4,
+                                "hp": extrair_atributos(p_dados)["hp"] * 4,
+                                "stats_base": extrair_atributos(p_dados),
+                                "status": None,
+                                "toxic_turnos": 0,
+                                "sono_turnos": 0,
+                                "confuso": False,
+                                "confuso_turnos": 0,
+                                "disable": None,
+                                "disable_turnos": 0,
+                                "ultimo_move": None,
+                                "estagios": {"attack": 0, "defense": 0, "special-attack": 0, "special-defense": 0, "speed": 0, "accuracy": 0}
+                            })
 
-        if poke1_dados and poke2_dados:
-            st.write("---")
-            st.subheader("Escolha até 4 golpes para cada lutador!")
-            
-            golpes_p1 = filtrar_golpes_level_up(poke1_dados)
-            golpes_p2 = filtrar_golpes_level_up(poke2_dados)
-            
-            dict_golpes_p1 = {m["move"]["name"].replace("-", " ").title(): m for m in golpes_p1}
-            dict_golpes_p2 = {m["move"]["name"].replace("-", " ").title(): m for m in golpes_p2}
-            
-            col_golpes1, col_golpes2 = st.columns(2)
-            
-            with col_golpes1:
-                st.caption(f"**Tipos:** {formatar_tipos(poke1_dados)}")
-                escolhas_p1 = st.multiselect(
-                    f"Golpes do {poke1_dados['name'].title()}:", 
-                    options=list(dict_golpes_p1.keys()), 
-                    max_selections=4
-                )
-            
-            with col_golpes2:
-                st.caption(f"**Tipos:** {formatar_tipos(poke2_dados)}")
-                escolhas_p2 = st.multiselect(
-                    f"Golpes do {poke2_dados['name'].title()}:", 
-                    options=list(dict_golpes_p2.keys()), 
-                    max_selections=4
-                )
-
-            st.write("---")
-            if st.button("Iniciar Batalha! 💥", use_container_width=True):
-                if len(escolhas_p1) > 0 and len(escolhas_p2) > 0:
-                    with st.spinner("Preparando a Arena, nya..."):
-                        
-                        st.session_state.p1 = poke1_dados
-                        st.session_state.p2 = poke2_dados
-                        
-                        st.session_state.stats1 = extrair_atributos(poke1_dados)
-                        st.session_state.stats2 = extrair_atributos(poke2_dados)
-                        
-                        st.session_state.hp1 = st.session_state.stats1["hp"] * 4
-                        st.session_state.hp_max1 = st.session_state.hp1
-                        st.session_state.hp2 = st.session_state.stats2["hp"] * 4
-                        st.session_state.hp_max2 = st.session_state.hp2
-                        
-                        estagios_iniciais = {"attack": 0, "defense": 0, "special-attack": 0, "special-defense": 0, "speed": 0, "accuracy": 0}
-                        st.session_state.estagios1 = estagios_iniciais.copy()
-                        st.session_state.estagios2 = estagios_iniciais.copy()
-                        
-                        st.session_state.moves1 = [dict_golpes_p1[nome] for nome in escolhas_p1]
-                        st.session_state.moves2 = [dict_golpes_p2[nome] for nome in escolhas_p2]
-                        
-                        st.session_state.status1 = None  
-                        st.session_state.status2 = None
-                        st.session_state.sono_turnos1 = 0 
-                        st.session_state.sono_turnos2 = 0
-                        
-                        st.session_state.toxic_turnos1 = 0
-                        st.session_state.toxic_turnos2 = 0
-                        
-                        st.session_state.ultimo_move1 = None
-                        st.session_state.ultimo_move2 = None
-                        st.session_state.disable1 = None       
-                        st.session_state.disable2 = None       
-                        st.session_state.disable_turnos1 = 0
-                        st.session_state.disable_turnos2 = 0
-                        
-                        st.session_state.confuso1 = False  
-                        st.session_state.confuso2 = False
-                        st.session_state.confuso_turnos1 = 0
-                        st.session_state.confuso_turnos2 = 0
-                        
-                        st.session_state.clima = "Normal"
-                        st.session_state.clima_turnos = 0
-                        
-                        st.session_state.turno = 1
-                        st.session_state.turnos_extras = 0
-                        st.session_state.log_batalha = ["A batalha começou! ⚡"]
-                        st.session_state.batalha_ativa = True
-                        st.rerun()
-                else:
-                    st.warning("Escolha pelo menos 1 golpe para cada Pokémon antes de lutar")
+        st.write("---")
+        if st.button("Iniciar Batalhas de Times! 💥", use_container_width=True):
+            if len(time1_preparado) == int(qtd_p1) and len(time2_preparado) == int(qtd_p2):
+                st.session_state.time1 = time1_preparado
+                st.session_state.time2 = time2_preparado
+                st.session_state.p1_ativo_idx = 0
+                st.session_state.p2_ativo_idx = 0
+                st.session_state.clima = "Normal"
+                st.session_state.clima_turnos = 0
+                st.session_state.turno = 1
+                st.session_state.turnos_extras = 0
+                st.session_state.log_batalha = ["A batalha de times começou! ⚡"]
+                st.session_state.batalha_ativa = True
+                st.rerun()
+            else:
+                st.warning("Por favor, selecione os Pokémon e pelo menos 1 golpe para cada um deles")
                     
     else:
         st.header("Arena de Batalha ⚔️")
         
-        p1 = st.session_state.p1
-        p2 = st.session_state.p2
+        pk1 = st.session_state.time1[st.session_state.p1_ativo_idx]
+        pk2 = st.session_state.time2[st.session_state.p2_ativo_idx]
         
         if st.session_state.clima == "Chuva":
-            st.info(f"🌧️ **Clima Atual: Dança da Chuva activa!** Golpes de Água fortalecidos e Fogo enfraquecidos.")
+            st.info(f"🌧️ **Clima Atual: Dança da Chuva ativa!**")
             
         col_arena1, col_arena2 = st.columns(2)
-        
         emojis_status = {"Envenenado": "🤢", "Toxic": "☣️", "Paralisado": "⚡", "Dormindo": "💤", "Queimado": "🔥", "Congelado": "❄️"}
         
         with col_arena1:
-            st.image(p1["sprites"]["front_default"], width=150)
-            status_txt1 = ""
-            if st.session_state.status1 in emojis_status:
-                status_txt1 += f" {emojis_status[st.session_state.status1]} [{st.session_state.status1}]"
-            if st.session_state.confuso1: status_txt1 += " 😵‍💫 [Confuso]"
-            if st.session_state.disable1: status_txt1 += f" ❌ [Disable: {st.session_state.disable1}]"
-                
-            st.write(f"**{p1['name'].title()}** ({formatar_tipos(p1)}){status_txt1}")
-            hp_pct1 = max(0.0, st.session_state.hp1 / st.session_state.hp_max1)
-            st.progress(hp_pct1, text=f"HP: {max(0, st.session_state.hp1)}/{st.session_state.hp_max1}")
+            st.image(pk1["dados"]["sprites"]["front_default"], width=150)
+            status_txt1 = f" {emojis_status[pk1['status']]}" if pk1['status'] else ""
+            if pk1['confuso']: status_txt1 += " 😵‍💫"
+            st.write(f"**{pk1['dados']['name'].title()}**{status_txt1} (Time 1)")
+            st.progress(max(0.0, pk1["hp"] / pk1["hp_max"]), text=f"HP: {max(0, pk1['hp'])}/{pk1['hp_max']}")
+            
+            # Mostra Pokémons restantes no banco
+            vivos_t1 = sum(1 for p in st.session_state.time1 if p["hp"] > 0)
+            st.caption(f"Pokémons restantes: {vivos_t1}/{len(st.session_state.time1)}")
             
         with col_arena2:
-            st.image(p2["sprites"]["front_default"], width=150)
-            status_txt2 = ""
-            if st.session_state.status2 in emojis_status:
-                status_txt2 += f" {emojis_status[st.session_state.status2]} [{st.session_state.status2}]"
-            if st.session_state.confuso2: status_txt2 += " 😵‍💫 [Confuso]"
-            if st.session_state.disable2: status_txt2 += f" ❌ [Disable: {st.session_state.disable2}]"
-                
-            st.write(f"**{p2['name'].title()}** ({formatar_tipos(p2)}){status_txt2}")
-            hp_pct2 = max(0.0, st.session_state.hp2 / st.session_state.hp_max2)
-            st.progress(hp_pct2, text=f"HP: {max(0, st.session_state.hp2)}/{st.session_state.hp_max2}")
+            st.image(pk2["dados"]["sprites"]["front_default"], width=150)
+            status_txt2 = f" {emojis_status[pk2['status']]}" if pk2['status'] else ""
+            if pk2['confuso']: status_txt2 += " 😵‍💫"
+            st.write(f"**{pk2['dados']['name'].title()}**{status_txt2} (Time 2)")
+            st.progress(max(0.0, pk2["hp"] / pk2["hp_max"]), text=f"HP: {max(0, pk2['hp'])}/{pk2['hp_max']}")
+            
+            vivos_t2 = sum(1 for p in st.session_state.time2 if p["hp"] > 0)
+            st.caption(f"Pokémons restantes: {vivos_t2}/{len(st.session_state.time2)}")
 
         st.write("---")
         
-        if st.session_state.hp1 <= 0 or st.session_state.hp2 <= 0:
-            vencedor = p1['name'].title() if st.session_state.hp2 <= 0 else p2['name'].title()
-            st.success(f"🏆 O vencedor é **{vencedor}**! Nya!")
-            st.balloons()
+        # Checagem de Faint (Nocaute)
+        if pk1["hp"] <= 0 or pk2["hp"] <= 0:
+            if pk1["hp"] <= 0:
+                st.warning(f"💀 **{pk1['dados']['name'].title()}** da Equipe 1 desmaiou!")
+                opcoes_troca = [i for i, p in enumerate(st.session_state.time1) if p["hp"] > 0]
+                if opcoes_troca:
+                    proximo = st.selectbox("Escolha quem vai entrar para lutar:", opcoes_troca, format_func=lambda idx: st.session_state.time1[idx]["dados"]["name"].title())
+                    if st.button("Enviar para o Combate 👟"):
+                        pk1["estagios"] = {"attack": 0, "defense": 0, "special-attack": 0, "special-defense": 0, "speed": 0, "accuracy": 0}
+                        pk1["confuso"] = False
+                        st.session_state.p1_ativo_idx = proximo
+                        st.session_state.log_batalha.insert(0, f"🔄 Equipe 1 enviou **{st.session_state.time1[proximo]['dados']['name'].title()}**!")
+                        st.rerun()
+                else:
+                    st.success("🏆 **A Equipe 2 é a grande vencedora da partida!**")
+                    st.balloons()
+                    if st.button("Voltar ao Menu 🔄"): st.session_state.batalha_ativa = False; st.rerun()
             
-            if st.button("Jogar Novamente 🔄"):
-                st.session_state.batalha_ativa = False
-                st.rerun()
+            elif pk2["hp"] <= 0:
+                st.warning(f"💀 **{pk2['dados']['name'].title()}** da Equipe 2 desmaiou!")
+                opcoes_troca = [i for i, p in enumerate(st.session_state.time2) if p["hp"] > 0]
+                if opcoes_troca:
+                    proximo = st.selectbox("Escolha quem vai entrar para lutar:", opcoes_troca, format_func=lambda idx: st.session_state.time2[idx]["dados"]["name"].title())
+                    if st.button("Enviar para o Combate 👟"):
+                        pk2["estagios"] = {"attack": 0, "defense": 0, "special-attack": 0, "special-defense": 0, "speed": 0, "accuracy": 0}
+                        pk2["confuso"] = False
+                        st.session_state.p2_ativo_idx = proximo
+                        st.session_state.log_batalha.insert(0, f"🔄 Equipe 2 enviou **{st.session_state.time2[proximo]['dados']['name'].title()}**!")
+                        st.rerun()
+                else:
+                    st.success("🏆 **A Equipe 1 é a grande vencedora da partida!** ")
+                    st.balloons()
+                    if st.button("Voltar ao Menu 🔄"): st.session_state.batalha_ativa = False; st.rerun()
         else:
-            jogador_atual = 1 if st.session_state.turno == 1 else 2
-            nome_atacante = p1['name'].title() if jogador_atual == 1 else p2['name'].title()
-            poke_defensor = p2 if jogador_atual == 1 else p1
-            movimentos_atuais = st.session_state.moves1 if jogador_atual == 1 else st.session_state.moves2
+            # Fluxo normal de turnos
+            jogador_atual = st.session_state.turno
+            nome_atacante = pk1['dados']['name'].title() if jogador_atual == 1 else pk2['dados']['name'].title()
+            pk_atkr = pk1 if jogador_atual == 1 else pk2
+            pk_defr = pk2 if jogador_atual == 1 else pk1
+            time_do_jogador = st.session_state.time1 if jogador_atual == 1 else st.session_state.time2
             
-            st.subheader(f"Vez do {nome_atacante} atacar!")
+            st.subheader(f"Vez de: **Equipe {jogador_atual}** ({nome_atacante})")
             
-            opcoes_golpes = {m["move"]["name"].replace("-", " ").title(): m["move"]["url"] for m in movimentos_atuais}
+            aba_acao_atk, aba_acao_troca = st.tabs(["⚔️ Escolher Golpe", "🔄 Trocar Pokémon"])
             
-            col_golpe, col_btn = st.columns([3, 1])
-            with col_golpe:
-                golpe_escolhido = st.selectbox("Escolha seu golpe:", list(opcoes_golpes.keys()))
+            with aba_acao_atk:
+                opcoes_golpes = {m["move"]["name"].replace("-", " ").title(): m["move"]["url"] for m in pk_atkr["moves"]}
+                col_golpe, col_btn = st.columns([3, 1])
+                with col_golpe:
+                    golpe_escolhido = st.selectbox("Selecione o ataque:", list(opcoes_golpes.keys()), key=f"gk_{st.session_state.turno}")
+                with col_btn:
+                    st.write(""); st.write("")
+                    btn_atacar = st.button("Atacar! ⚡", use_container_width=True, key=f"btn_atk_{st.session_state.turno}")
             
-            with col_btn:
-                st.write("")
-                st.write("")
-                btn_atacar = st.button("Atacar! ⚡", use_container_width=True)
+            with aba_acao_troca:
+                # Filtro de Pokemons vivos
+                banco_disponivel = [i for i, p in enumerate(time_do_jogador) if p["hp"] > 0 and i != (st.session_state.p1_ativo_idx if jogador_atual == 1 else st.session_state.p2_ativo_idx)]
+                if banco_disponivel:
+                    p_para_trocar = st.selectbox("Escolha o Pokémon do banco:", banco_disponivel, format_func=lambda idx: f"{time_do_jogador[idx]['dados']['name'].title()} (HP: {time_do_jogador[idx]['hp']}/{time_do_jogador[idx]['hp_max']})")
+                    btn_trocar = st.button("Executar Troca 🔄", use_container_width=True)
+                else:
+                    st.write("Você não tem mais Pokemons usaveis!")
+                    btn_trocar = False
+
+            # --- LÓGICA DO BOTÃO DE TROCA ---
+            if btn_trocar:
+                # Reseta buffs de status voláteis
+                pk_atkr["estagios"] = {"attack": 0, "defense": 0, "special-attack": 0, "special-defense": 0, "speed": 0, "accuracy": 0}
+                pk_atkr["confuso"] = False
                 
+                if jogador_atual == 1:
+                    st.session_state.p1_ativo_idx = p_para_trocar
+                    st.session_state.log_batalha.insert(0, f"🔄 **Equipe 1** chamou {nome_atacante} de volta e enviou **{st.session_state.time1[p_para_trocar]['dados']['name'].title()}**!")
+                    st.session_state.turno = 2
+                else:
+                    st.session_state.p2_ativo_idx = p_para_trocar
+                    st.session_state.log_batalha.insert(0, f"🔄 **Equipe 2** chamou {nome_atacante} de volta e enviou **{st.session_state.time2[p_para_trocar]['dados']['name'].title()}**!")
+                    st.session_state.turno = 1
+                st.rerun()
+
+            # --- LÓGICA DO ATAQUE ---
             if btn_atacar:
-                golpe_bloqueado = st.session_state.disable1 if jogador_atual == 1 else st.session_state.disable2
+                pode_atacar = True
+                golpe_bloqueado = pk_atkr["disable"]
                 
                 if golpe_bloqueado and golpe_escolhido.lower().strip() == golpe_bloqueado.lower().strip():
-                    st.error(f"❌ O movimento **{golpe_escolhido}** está desativado por conta do Disable! Escolha outro movimento")
-                    st.session_state.log_batalha.insert(0, f"⚠️ **{nome_atacante}** tentou usar **{golpe_escolhido}**, mas o golpe está desativado pelo Disable!")
+                    st.error(f"❌ O movimento **{golpe_escolhido}** está desativado por Disable!")
                     pode_atacar = False
                     st.session_state.turno = 2 if jogador_atual == 1 else 1
                     st.rerun()
-                else:
-                    pode_atacar = True
 
                 url_do_golpe = opcoes_golpes[golpe_escolhido]
                 dados_do_golpe = get_move_data(url_do_golpe)
@@ -371,197 +390,91 @@ with aba_batalha:
                 precisao_base = dados_do_golpe.get("accuracy")
                 classe_dano = dados_do_golpe.get("damage_class", {}).get("name", "physical")
                 
-                estagios_atacante = st.session_state.estagios1 if jogador_atual == 1 else st.session_state.estagios2
-                estagios_defensor = st.session_state.estagios2 if jogador_atual == 1 else st.session_state.estagios1
-                stats_atacante = st.session_state.stats1 if jogador_atual == 1 else st.session_state.stats2
-                stats_defensor = st.session_state.stats2 if jogador_atual == 1 else st.session_state.stats1
-                
-                status_atkr = st.session_state.status1 if jogador_atual == 1 else st.session_state.status2
-                confuso_atkr = st.session_state.confuso1 if jogador_atual == 1 else st.session_state.confuso2
-                confuso_turnos = st.session_state.confuso_turnos1 if jogador_atual == 1 else st.session_state.confuso_turnos2
-                sono_turnos = st.session_state.sono_turnos1 if jogador_atual == 1 else st.session_state.sono_turnos2
-
-                if pode_atacar and status_atkr == "Congelado":
+                # Aplicações usando as variáveis do dicionário do Pokémon ativo
+                if pode_atacar and pk_atkr["status"] == "Congelado":
                     if random.randint(1, 100) <= 20: 
-                        if jogador_atual == 1: st.session_state.status1 = None
-                        else: st.session_state.status2 = None
-                        st.session_state.log_batalha.insert(0, f"☀️ **{nome_atacante}** se derreteu e conseguiu se mover!")
-                        status_atkr = None
+                        pk_atkr["status"] = None
+                        st.session_state.log_batalha.insert(0, f"☀️ **{nome_atacante}** se derreteu!")
                     else:
-                        st.session_state.log_batalha.insert(0, f"❄️ **{nome_atacante}** está congelado! Não consegue se mover!")
+                        st.session_state.log_batalha.insert(0, f"❄️ **{nome_atacante}** está congelado!")
                         pode_atacar = False
 
-                if pode_atacar and status_atkr == "Dormindo":
-                    if sono_turnos <= 0:
-                        if jogador_atual == 1: st.session_state.status1 = None
-                        else: st.session_state.status2 = None
+                if pode_atacar and pk_atkr["status"] == "Dormindo":
+                    if pk_atkr["sono_turnos"] <= 0:
+                        pk_atkr["status"] = None
                         st.session_state.log_batalha.insert(0, f"☀️ **{nome_atacante}** acordou!")
-                        status_atkr = None
                     else:
-                        if jogador_atual == 1: st.session_state.sono_turnos1 -= 1
-                        else: st.session_state.sono_turnos2 -= 1
-                        st.session_state.log_batalha.insert(0, f"💤 **{nome_atacante}** está dormindo profundamente...")
+                        pk_atkr["sono_turnos"] -= 1
+                        st.session_state.log_batalha.insert(0, f"💤 **{nome_atacante}** está dormindo...")
                         pode_atacar = False
 
-                if pode_atacar and confuso_atkr and confuso_turnos <= 0:
-                    if jogador_atual == 1: st.session_state.confuso1 = False
-                    else: st.session_state.confuso2 = False
-                    st.session_state.log_batalha.insert(0, f"✨ **{nome_atacante}** se livrou da confusão!")
-                    confuso_atkr = False
-
-                if pode_atacar and status_atkr == "Paralisado" and random.randint(1, 100) <= 25:
-                    st.session_state.log_batalha.insert(0, f"⚡ **{nome_atacante}** está totalmente paralisado! Não conseguiu se mover!")
+                if pode_atacar and pk_atkr["status"] == "Paralisado" and random.randint(1, 100) <= 25:
+                    st.session_state.log_batalha.insert(0, f"⚡ **{nome_atacante}** está paralisado!")
                     pode_atacar = False
 
-                if pode_atacar and confuso_atkr:
-                    if jogador_atual == 1: st.session_state.confuso_turnos1 -= 1
-                    else: st.session_state.confuso_turnos2 -= 1
-                    
-                    st.session_state.log_batalha.insert(0, f"😵‍💫 **{nome_atacante}** está confuso...")
-                    if random.randint(1, 100) <= 33:
-                        atk_real = stats_atacante["attack"] * calcular_modificador_estagio(estagios_atacante["attack"])
-                        if status_atkr == "Queimado": atk_real *= 0.5 
-                        def_real = stats_atacante["defense"] * calcular_modificador_estagio(estagios_atacante["defense"])
-                        dano_auto = int(((22 * 40 * (atk_real / def_real)) / 50) + 2)
-                        
-                        if jogador_atual == 1: st.session_state.hp1 -= dano_auto
-                        else: st.session_state.hp2 -= dano_auto
-                        
-                        st.session_state.log_batalha.insert(0, f"💥 Ficou tão confuso que bateu em si mesmo causando **{dano_auto}** de dano!")
-                        pode_atacar = False
+                if pode_atacar and pk_atkr["confuso"]:
+                    if pk_atkr["confuso_turnos"] <= 0:
+                        pk_atkr["confuso"] = False
+                        st.session_state.log_batalha.insert(0, f"✨ **{nome_atacante}** se livrou da confusão!")
+                    else:
+                        pk_atkr["confuso_turnos"] -= 1
+                        st.session_state.log_batalha.insert(0, f"😵‍💫 **{nome_atacante}** está confuso...")
+                        if random.randint(1, 100) <= 33:
+                            atk_real = pk_atkr["stats_base"]["attack"] * calcular_modificador_estagio(pk_atkr["estagios"]["attack"])
+                            if pk_atkr["status"] == "Queimado": atk_real *= 0.5 
+                            def_real = pk_atkr["stats_base"]["defense"] * calcular_modificador_estagio(pk_atkr["estagios"]["defense"])
+                            dano_auto = int(((22 * 40 * (atk_real / def_real)) / 50) + 2)
+                            pk_atkr["hp"] -= dano_auto
+                            st.session_state.log_batalha.insert(0, f"💥 Bateu em si mesmo causando **{dano_auto}** de dano!")
+                            pode_atacar = False
 
                 if pode_atacar:
                     acertou = True
                     if precisao_base is not None:
-                        mod_acc = calcular_modificador_estagio(estagios_atacante["accuracy"], eh_precisao=True)
-                        chance_acerto = precisao_base * mod_acc
-                        if random.randint(1, 100) > chance_acerto:
-                            acertou = False
+                        mod_acc = calcular_modificador_estagio(pk_atkr["estagios"]["accuracy"], eh_precisao=True)
+                        if random.randint(1, 100) > (precisao_base * mod_acc): acertou = False
 
                     if not acertou:
-                        mensagem_log = f"💨 **{nome_atacante}** tentou usar **{golpe_escolhido}**, mas errou o ataque!"
-                        st.session_state.log_batalha.insert(0, mensagem_log)
+                        st.session_state.log_batalha.insert(0, f"💨 **{nome_atacante}** errou o ataque **{golpe_escolhido}**!")
                     else:
-                        if jogador_atual == 1: st.session_state.ultimo_move1 = golpe_escolhido
-                        else: st.session_state.ultimo_move2 = golpe_escolhido
-                        
+                        pk_atkr["ultimo_move"] = golpe_escolhido
                         multiplicador = 1.0
                         texto_efetividade = ""
                         efeito_especial = ""
-                        dano_causado = 0
-                        mensagens_status = []
                         
-                        status_defensor_atual = st.session_state.status2 if jogador_atual == 1 else st.session_state.status1
-                        if status_defensor_atual == "Congelado" and tipo_do_golpe == "fire":
-                            if jogador_atual == 1: st.session_state.status2 = None
-                            else: st.session_state.status1 = None
-                            efeito_especial += " 🔥 O calor do golpe derreteu o gelo do oponente!"
-
-                        mudancas_stats = dados_do_golpe.get("stat_changes", [])
-                        if mudancas_stats:
-                            alvo_do_golpe = dados_do_golpe.get("target", {}).get("name", "")
-                            alvo_estagios = estagios_atacante if "user" in alvo_do_golpe else estagios_defensor
-                            
-                            for mudanca in mudancas_stats:
-                                nome_stat = mudanca["stat"]["name"]
-                                valor_mudanca = mudanca["change"]
-                                if nome_stat in alvo_estagios:
-                                    alvo_estagios[nome_stat] = max(-6, min(6, alvo_estagios[nome_stat] + valor_mudanca))
-                                    direcao = "caiu" if valor_mudanca < 0 else "subiu"
-                                    mensagens_status.append(f"[{nome_stat.title()} {direcao}!]")
-                                    
-                            if mensagens_status:
-                                efeito_especial += " " + " ".join(mensagens_status)
-                            # STATUS DE EFEITO SENDO APLICADOS
+                        # Efeito de Danos e Alterações de Status
                         if poder is None:
                             if nome_interno_golpe == "rest":
-                                if jogador_atual == 1:
-                                    st.session_state.hp1 = st.session_state.hp_max1
-                                    st.session_state.status1 = "Dormindo"
-                                    st.session_state.sono_turnos1 = 2
-                                else:
-                                    st.session_state.hp2 = st.session_state.hp_max2
-                                    st.session_state.status2 = "Dormindo"
-                                    st.session_state.sono_turnos2 = 2
+                                pk_atkr["hp"] = pk_atkr["hp_max"]
+                                pk_atkr["status"] = "Dormindo"
+                                pk_atkr["sono_turnos"] = 2
                                 efeito_especial += " recuperou toda a vida e caiu no sono! 🛌"
-
-                            elif nome_interno_golpe == "disable":
-                                ultimo_do_alvo = st.session_state.ultimo_move2 if jogador_atual == 1 else st.session_state.ultimo_move1
-                                if ultimo_do_alvo:
-                                    if jogador_atual == 1:
-                                        st.session_state.disable2 = ultimo_do_alvo
-                                        st.session_state.disable_turnos2 = 3
-                                    else:
-                                        st.session_state.disable1 = ultimo_do_alvo
-                                        st.session_state.disable_turnos1 = 3
-                                    efeito_especial += f" Desativou temporariamente o golpe **{ultimo_do_alvo}** do rival por 3 turnos! ❌"
-                                else:
-                                    efeito_especial += " mas falhou porque o oponente ainda não executou nenhum movimento"
-
-                            elif "sleep-powder" in nome_interno_golpe or "hypnosis" in nome_interno_golpe or "spore" in nome_interno_golpe:
-                                turnos_aleatorios = random.randint(2, 3)
-                                if jogador_atual == 1:
-                                    st.session_state.status2 = "Dormindo"
-                                    st.session_state.sono_turnos2 = turnos_aleatorios
-                                else:
-                                    st.session_state.status1 = "Dormindo"
-                                    st.session_state.sono_turnos1 = turnos_aleatorios
-                                efeito_especial += f" Fez o oponente pegar no sono por {turnos_aleatorios} turnos! 💤"
-
+                            elif nome_interno_golpe == "disable" and pk_defr["ultimo_move"]:
+                                pk_defr["disable"] = pk_defr["ultimo_move"]
+                                pk_defr["disable_turnos"] = 3
+                                efeito_especial += f" Desativou o golpe **{pk_defr['ultimo_move']}** do rival! ❌"
+                            elif "sleep-powder" in nome_interno_golpe or "hypnosis" in nome_interno_golpe:
+                                if not pk_defr["status"]:
+                                    pk_defr["status"] = "Dormindo"; pk_defr["sono_turnos"] = random.randint(2,3)
+                                    efeito_especial += " Fez o oponente dormir! 💤"
                             elif "stun-spore" in nome_interno_golpe or "thunder-wave" in nome_interno_golpe:
-                                if jogador_atual == 1: st.session_state.status2 = "Paralisado"
-                                else: st.session_state.status1 = "Paralisado"
-                                efeito_especial += " O oponente foi paralisado! ⚡"
-                            
+                                if not pk_defr["status"]: pk_defr["status"] = "Paralisado"; efeito_especial += " Paralisou o rival! ⚡"
                             elif "will-o-wisp" in nome_interno_golpe:
-                                if jogador_atual == 1: st.session_state.status2 = "Queimado"
-                                else: st.session_state.status1 = "Queimado"
-                                efeito_especial += " O oponente foi queimado! 🔥"
-
-                            elif "powder-snow" in nome_interno_golpe or "blizzard" in nome_interno_golpe or "ice-beam" in nome_interno_golpe:
-                                if jogador_atual == 1: st.session_state.status2 = "Congelado"
-                                else: st.session_state.status1 = "Congelado"
-                                efeito_especial += " O oponente ficou congelado! ❄️"
-
-                            elif "confuse" in nome_interno_golpe or "supersonic" in nome_interno_golpe:
-                                if jogador_atual == 1:
-                                    st.session_state.confuso2 = True
-                                    st.session_state.confuso_turnos2 = random.randint(2, 4)
-                                else:
-                                    st.session_state.confuso1 = True
-                                    st.session_state.confuso_turnos1 = random.randint(2, 4)
-                                efeito_especial += " O oponente ficou confuso! 😵‍💫"
-                                
+                                if not pk_defr["status"]: pk_defr["status"] = "Queimado"; efeito_especial += " Queimou o rival! 🔥"
                             elif nome_interno_golpe == "toxic":
-                                status_alvo = st.session_state.status2 if jogador_atual == 1 else st.session_state.status1
-                                if status_alvo is None:
-                                    if jogador_atual == 1:
-                                        st.session_state.status2 = "Toxic"
-                                        st.session_state.toxic_turnos2 = 1
-                                    else:
-                                        st.session_state.status1 = "Toxic"
-                                        st.session_state.toxic_turnos1 = 1
-                                    efeito_especial += " O oponente foi gravemente envenenado pelo veneno corrosivo! ☣️"
-                                else:
-                                    efeito_especial += " mas falhou porque o alvo já possui uma condição!"
-                                
-                            elif "poison" in nome_interno_golpe or "smog" in nome_interno_golpe:
-                                status_alvo = st.session_state.status2 if jogador_atual == 1 else st.session_state.status1
-                                if status_alvo is None:
-                                    if jogador_atual == 1: st.session_state.status2 = "Envenenado"
-                                    else: st.session_state.status1 = "Envenenado"
-                                    efeito_especial += " O oponente foi envenenado! 🤢"
-                                    
+                                if not pk_defr["status"]: pk_defr["status"] = "Toxic"; pk_defr["toxic_turnos"] = 1; efeito_especial += " Envenenou gravemente (Toxic)! ☣️"
+                            elif "confuse" in nome_interno_golpe:
+                                pk_defr["confuso"] = True; pk_defr["confuso_turnos"] = random.randint(2,4)
+                                efeito_especial += " Deixou o oponente confuso! 😵‍💫"
                             elif nome_interno_golpe == "rain-dance":
-                                st.session_state.clima = "Chuva"
-                                st.session_state.clima_turnos = 5
-                                efeito_especial += " Uma tempestade começou! 🌧️"
-                                
+                                st.session_state.clima = "Chuva"; st.session_state.clima_turnos = 5
+                                efeito_especial += " A chuva começou! 🌧️"
+                            
                             mensagem_log = gerar_mensagem_acao(nome_atacante, golpe_escolhido, tipo_do_golpe, poder, 0, "", efeito_especial)
                         else:
-                            tipos_defensor = [t["type"]["name"] for t in poke_defensor["types"]]
+                            # Cálculo de Dano
+                            tipos_defensor = [t["type"]["name"] for t in pk_defr["dados"]["types"]]
                             dados_fraquezas = get_type_data(tipo_do_golpe)
-                            
                             if dados_fraquezas:
                                 relacoes = dados_fraquezas["damage_relations"]
                                 for t_def in tipos_defensor:
@@ -572,119 +485,68 @@ with aba_batalha:
                             if st.session_state.clima == "Chuva":
                                 if tipo_do_golpe == "water": multiplicador *= 1.5
                                 elif tipo_do_golpe == "fire": multiplicador *= 0.5
-                                    
+                            
                             if multiplicador > 1.0: texto_efetividade += " **Super efetivo! 💥**"
-                            elif multiplicador < 1.0 and multiplicador > 0: texto_efetividade += " **Não foi muito efetivo... 🍃**"
-
+                            elif 0 < multiplicador < 1.0: texto_efetividade += " **Não foi muito efetivo... 🍃**"
+                            
                             if multiplicador > 0:
                                 stat_atk = "special-attack" if classe_dano == "special" else "attack"
                                 stat_def = "special-defense" if classe_dano == "special" else "defense"
-                                
-                                atk_real = stats_atacante[stat_atk] * calcular_modificador_estagio(estagios_atacante[stat_atk])
-                                if stat_atk == "attack" and status_atkr == "Queimado": atk_real *= 0.5
-                                    
-                                def_real = stats_defensor[stat_def] * calcular_modificador_estagio(estagios_defensor[stat_def])
+                                atk_real = pk_atkr["stats_base"][stat_atk] * calcular_modificador_estagio(pk_atkr["estagios"][stat_atk])
+                                if stat_atk == "attack" and pk_atkr["status"] == "Queimado": atk_real *= 0.5
+                                def_real = pk_defr["stats_base"][stat_def] * calcular_modificador_estagio(pk_defr["estagios"][stat_def])
                                 
                                 dano_base = int(((22 * poder * (atk_real / def_real)) / 50) + 2)
                                 dano_causado = int(dano_base * random.uniform(0.85, 1.0) * multiplicador)
-
-                                if jogador_atual == 1: st.session_state.hp2 -= dano_causado
-                                else: st.session_state.hp1 -= dano_causado
-                                
-                            if tipo_do_golpe == "fire" and poder is not None:
-                                status_atual_defensor = st.session_state.status2 if jogador_atual == 1 else st.session_state.status1
-                                if status_atual_defensor is None and random.randint(1, 100) <= 10:
-                                    if jogador_atual == 1: st.session_state.status2 = "Queimado"
-                                    else: st.session_state.status1 = "Queimado"
-                                    efeito_especial += " 🔥 As chamas intensas deixaram uma queimadura no oponente!"
-                                    
-                            elif tipo_do_golpe == "ice" and poder is not None and random.randint(1, 100) <= 10:
-                                if jogador_atual == 1 and not st.session_state.status2: st.session_state.status2 = "Congelado"
-                                elif jogador_atual == 2 and not st.session_state.status1: st.session_state.status1 = "Congelado"
-                                efeito_especial += " O frio extremo congelou o alvo! ❄️"
+                                pk_defr["hp"] -= dano_causado
+                            else:
+                                dano_causado = 0
+                                texto_efetividade += " Não surtiu efeito..."
 
                             mensagem_log = gerar_mensagem_acao(nome_atacante, golpe_escolhido, tipo_do_golpe, poder, dano_causado, texto_efetividade, efeito_especial)
-
                         st.session_state.log_batalha.insert(0, mensagem_log)
-                # DISABLED MOVESET
-                if jogador_atual == 1 and st.session_state.disable1:
-                    st.session_state.disable_turnos1 -= 1
-                    if st.session_state.disable_turnos1 <= 0:
-                        st.session_state.log_batalha.insert(0, f"✨ O efeito do Disable no **{p1['name'].title()}** sumiu! O movimento **{st.session_state.disable1}** foi liberado!")
-                        st.session_state.disable1 = None
-                elif jogador_atual == 2 and st.session_state.disable2:
-                    st.session_state.disable_turnos2 -= 1
-                    if st.session_state.disable_turnos2 <= 0:
-                        st.session_state.log_batalha.insert(0, f"✨ O efeito do Disable no **{p2['name'].title()}** sumiu! O movimento **{st.session_state.disable2}** foi liberado!")
-                        st.session_state.disable2 = None
 
-                if st.session_state.status1 == "Envenenado" and st.session_state.hp1 > 0:
-                    st.session_state.hp1 -= max(3, int(st.session_state.hp_max1 * 0.04))
-                    st.session_state.log_batalha.insert(0, f"🤢 O **{p1['name'].title()}** sofreu dano pelo veneno!")
-                if st.session_state.status2 == "Envenenado" and st.session_state.hp2 > 0:
-                    st.session_state.hp2 -= max(3, int(st.session_state.hp_max2 * 0.04))
-                    st.session_state.log_batalha.insert(0, f"🤢 O **{p2['name'].title()}** sofreu dano pelo veneno!")
+                # --- PROCESSAMENTO FIM DE TURNO DO POKÉMON ATIVO ---
+                if pk_atkr["disable"]:
+                    pk_atkr["disable_turnos"] -= 1
+                    if pk_atkr["disable_turnos"] <= 0: pk_atkr["disable"] = None
 
-                if st.session_state.status1 == "Toxic" and st.session_state.hp1 > 0:
-                    turno_atual_tox = st.session_state.toxic_turnos1
-                    pct_dano = 0.03 * turno_atual_tox
-                    dano_tox = max(4, int(st.session_state.hp_max1 * pct_dano))
-                    st.session_state.hp1 -= dano_tox
-                    st.session_state.log_batalha.insert(0, f"☣️ O veneno do Toxic corre pelas veias do **{p1['name'].title()}**! Causou **{dano_tox}** de dano (Turno {turno_atual_tox}/5)!")
-                    if turno_atual_tox >= 5:
-                        st.session_state.status1 = None
-                        st.session_state.toxic_turnos1 = 0
-                        st.session_state.log_batalha.insert(0, f"✨ O efeito do Toxic no **{p1['name'].title()}** expirou naturalmente!")
-                    else: st.session_state.toxic_turnos1 += 1
+                if pk_atkr["status"] == "Envenenado" and pk_atkr["hp"] > 0:
+                    pk_atkr["hp"] -= max(3, int(pk_atkr["hp_max"] * 0.04))
+                    st.session_state.log_batalha.insert(0, f"🤢 **{nome_atacante}** sofreu dano do Veneno!")
+                
+                if pk_atkr["status"] == "Toxic" and pk_atkr["hp"] > 0:
+                    dano_tox = max(4, int(pk_atkr["hp_max"] * (0.03 * pk_atkr["toxic_turnos"])))
+                    pk_atkr["hp"] -= dano_tox
+                    st.session_state.log_batalha.insert(0, f"☣️ O Toxic causou **{dano_tox}** de dano em **{nome_atacante}**!")
+                    if pk_atkr["toxic_turnos"] >= 5: pk_atkr["status"] = None; pk_atkr["toxic_turnos"] = 0
+                    else: pk_atkr["toxic_turnos"] += 1
 
-                if st.session_state.status2 == "Toxic" and st.session_state.hp2 > 0:
-                    turno_atual_tox = st.session_state.toxic_turnos2
-                    pct_dano = 0.03 * turno_atual_tox
-                    dano_tox = max(4, int(st.session_state.hp_max2 * pct_dano))
-                    st.session_state.hp2 -= dano_tox
-                    st.session_state.log_batalha.insert(0, f"☣️ O veneno do Toxic corre pelas veias do **{p2['name'].title()}**! Causou **{dano_tox}** de dano (Turno {turno_atual_tox}/5)!")
-                    if turno_atual_tox >= 5:
-                        st.session_state.status2 = None
-                        st.session_state.toxic_turnos2 = 0
-                        st.session_state.log_batalha.insert(0, f"✨ O efeito do Toxic no **{p2['name'].title()}** expirou naturalmente!")
-                    else: st.session_state.toxic_turnos2 += 1
-
-                if st.session_state.status1 == "Queimado" and st.session_state.hp1 > 0:
-                    st.session_state.hp1 -= max(4, int(st.session_state.hp_max1 * 0.06))
-                    st.session_state.log_batalha.insert(0, f"🔥 O **{p1['name'].title()}** sofreu dano por queimadura!")
-                if st.session_state.status2 == "Queimado" and st.session_state.hp2 > 0:
-                    st.session_state.hp2 -= max(4, int(st.session_state.hp_max2 * 0.06))
-                    st.session_state.log_batalha.insert(0, f"🔥 O **{p2['name'].title()}** sofreu dano por queimadura!")
+                if pk_atkr["status"] == "Queimado" and pk_atkr["hp"] > 0:
+                    pk_atkr["hp"] -= max(4, int(pk_atkr["hp_max"] * 0.06))
+                    st.session_state.log_batalha.insert(0, f"🔥 **{nome_atacante}** sofreu dano da Queimadura!")
 
                 if st.session_state.clima != "Normal":
                     st.session_state.clima_turnos -= 1
-                    if st.session_state.clima_turnos <= 0:
-                        st.session_state.clima = "Normal"
-                        st.session_state.log_batalha.insert(0, "☀️ O céu clareou e a chuva parou na arena!")
+                    if st.session_state.clima_turnos <= 0: st.session_state.clima = "Normal"
 
-                speed_p1_real = st.session_state.stats1["speed"] * calcular_modificador_estagio(st.session_state.estagios1["speed"])
-                speed_p2_real = st.session_state.stats2["speed"] * calcular_modificador_estagio(st.session_state.estagios2["speed"])
-                
-                if st.session_state.status1 == "Paralisado": speed_p1_real *= 0.5
-                if st.session_state.status2 == "Paralisado": speed_p2_real *= 0.5
-                
-                speed_atacante = speed_p1_real if jogador_atual == 1 else speed_p2_real
-                speed_defensor = speed_p2_real if jogador_atual == 1 else speed_p1_real
-                
-                if pode_atacar and speed_atacante >= speed_defensor * 4.0 and st.session_state.turnos_extras < 1:
+                # Cálculo de Velocidade de turno extra
+                sp_a = pk1["stats_base"]["speed"] * calcular_modificador_estagio(pk1["estagios"]["speed"]) * (0.5 if pk1["status"] == "Paralisado" else 1.0)
+                sp_b = pk2["stats_base"]["speed"] * calcular_modificador_estagio(pk2["estagios"]["speed"]) * (0.5 if pk2["status"] == "Paralisado" else 1.0)
+                speed_atk = sp_a if jogador_atual == 1 else sp_b
+                speed_def = sp_b if jogador_atual == 1 else sp_a
+
+                if pode_atacar and speed_atk >= speed_def * 4.0 and st.session_state.turnos_extras < 1:
                     st.session_state.turnos_extras += 1
-                    st.session_state.log_batalha.insert(0, f"💨 A velocidade do **{nome_atacante}** é avassaladora! Conseguiu um turno extra por pura agilidade")
+                    st.session_state.log_batalha.insert(0, f"💨 Agilidade insana do **{nome_atacante}**! Ganhou um turno extra!")
                 else:
                     st.session_state.turno = 2 if jogador_atual == 1 else 1
                     st.session_state.turnos_extras = 0
 
                 st.rerun()
 
-        with st.expander("📝 Histórico da Batalha", expanded=True):
-            for linha in st.session_state.log_batalha:
-                st.write(linha)
+        with st.expander("📝 Histórico Completo da Arena", expanded=True):
+            for linha in st.session_state.log_batalha: st.write(linha)
                 
         st.write("---")
-        if st.button("Fugir da batalha 🏳️"):
-            st.session_state.batalha_ativa = False
-            st.rerun()
+        if st.button("Fugir da batalha 🏳️"): st.session_state.batalha_ativa = False; st.rerun()
